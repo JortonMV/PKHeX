@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using PKHeX.Core.Properties;
 
 namespace PKHeX.Core
 {
@@ -9,18 +10,25 @@ namespace PKHeX.Core
         // Event Database(s)
         public static MysteryGift[] MGDB_G6, MGDB_G7 = new MysteryGift[0];
 
+        // Gen 1
+        private static readonly Learnset[] LevelUpRB = Learnset1.getArray(Resources.lvlmove_rb);
+        private static readonly Learnset[] LevelUpY = Learnset1.getArray(Resources.lvlmove_y);
+        private static readonly EvolutionTree Evolves1;
+        private static readonly EncounterArea[] SlotsRBY;
+        private static readonly EncounterStatic[] StaticRBY;
+
         // Gen 6
-        private static readonly EggMoves[] EggMovesXY = EggMoves6.getArray(Data.unpackMini(Properties.Resources.eggmove_xy, "xy"));
-        private static readonly Learnset[] LevelUpXY = Learnset6.getArray(Data.unpackMini(Properties.Resources.lvlmove_xy, "xy"));
-        private static readonly EggMoves[] EggMovesAO = EggMoves6.getArray(Data.unpackMini(Properties.Resources.eggmove_ao, "ao"));
-        private static readonly Learnset[] LevelUpAO = Learnset6.getArray(Data.unpackMini(Properties.Resources.lvlmove_ao, "ao"));
+        private static readonly EggMoves[] EggMovesXY = EggMoves6.getArray(Data.unpackMini(Resources.eggmove_xy, "xy"));
+        private static readonly Learnset[] LevelUpXY = Learnset6.getArray(Data.unpackMini(Resources.lvlmove_xy, "xy"));
+        private static readonly EggMoves[] EggMovesAO = EggMoves6.getArray(Data.unpackMini(Resources.eggmove_ao, "ao"));
+        private static readonly Learnset[] LevelUpAO = Learnset6.getArray(Data.unpackMini(Resources.lvlmove_ao, "ao"));
         private static readonly EvolutionTree Evolves6;
         private static readonly EncounterArea[] SlotsX, SlotsY, SlotsA, SlotsO;
         private static readonly EncounterStatic[] StaticX, StaticY, StaticA, StaticO;
 
         // Gen 7
-        private static readonly EggMoves[] EggMovesSM = EggMoves7.getArray(Data.unpackMini(Properties.Resources.eggmove_sm, "sm"));
-        private static readonly Learnset[] LevelUpSM = Learnset7.getArray(Data.unpackMini(Properties.Resources.lvlmove_sm, "sm"));
+        private static readonly EggMoves[] EggMovesSM = EggMoves7.getArray(Data.unpackMini(Resources.eggmove_sm, "sm"));
+        private static readonly Learnset[] LevelUpSM = Learnset7.getArray(Data.unpackMini(Resources.lvlmove_sm, "sm"));
         private static readonly EvolutionTree Evolves7;
         private static readonly EncounterArea[] SlotsSN, SlotsMN;
         private static readonly EncounterStatic[] StaticSN, StaticMN;
@@ -31,16 +39,16 @@ namespace PKHeX.Core
             EncounterStatic[] table;
             switch (Game)
             {
-                case GameVersion.X:
-                case GameVersion.Y:
+                case GameVersion.RBY:
+                    table = Encounter_RBY;
+                    break;
+                case GameVersion.X: case GameVersion.Y:
                     table = Encounter_XY;
                     break;
-                case GameVersion.AS:
-                case GameVersion.OR:
+                case GameVersion.AS: case GameVersion.OR:
                     table = Encounter_AO;
                     break;
-                case GameVersion.SN:
-                case GameVersion.MN:
+                case GameVersion.SN: case GameVersion.MN:
                     table = Encounter_SM;
                     break;
 
@@ -56,27 +64,27 @@ namespace PKHeX.Core
             {
                 case GameVersion.X:
                     ident = "xy";
-                    tables = Properties.Resources.encounter_x;
+                    tables = Resources.encounter_x;
                     break;
                 case GameVersion.Y:
                     ident = "xy";
-                    tables = Properties.Resources.encounter_y;
+                    tables = Resources.encounter_y;
                     break;
                 case GameVersion.AS:
                     ident = "ao";
-                    tables = Properties.Resources.encounter_a;
+                    tables = Resources.encounter_a;
                     break;
                 case GameVersion.OR:
                     ident = "ao";
-                    tables = Properties.Resources.encounter_o;
+                    tables = Resources.encounter_o;
                     break;
                 case GameVersion.SN:
                     ident = "sm";
-                    tables = Properties.Resources.encounter_sn;
+                    tables = Resources.encounter_sn;
                     break;
                 case GameVersion.MN:
                     ident = "sm";
-                    tables = Properties.Resources.encounter_mn;
+                    tables = Resources.encounter_mn;
                     break;
             }
             if (ident == null)
@@ -128,6 +136,24 @@ namespace PKHeX.Core
 
         static Legal() // Setup
         {
+            // Gen 1
+            {
+                Evolves1 = new EvolutionTree(new[] { Resources.evos_rby }, GameVersion.RBY, PersonalTable.Y, MaxSpeciesID_1);
+                var red         = EncounterArea.getArray1_GW(Resources.encounter_red);
+                var blu         = EncounterArea.getArray1_GW(Resources.encounter_blue);
+                var ylw         = EncounterArea.getArray1_GW(Resources.encounter_yellow);
+                var rb_fish     = EncounterArea.getArray1_F(Resources.encounter_rb_f);
+                var ylw_fish    = EncounterArea.getArray1_FY(Resources.encounter_yellow_f);
+
+                red = addExtraTableSlots(red, rb_fish);
+                blu = addExtraTableSlots(blu, rb_fish);
+                ylw = addExtraTableSlots(ylw, ylw_fish);
+
+                SlotsRBY = addExtraTableSlots(addExtraTableSlots(red, blu), ylw);
+                Array.Resize(ref SlotsRBY, SlotsRBY.Length + 1);
+                SlotsRBY[SlotsRBY.Length - 1] = FishOldGood_RBY;
+                StaticRBY = getStaticEncounters(GameVersion.RBY);
+            }
             // Gen 6
             {
                 StaticX = getStaticEncounters(GameVersion.X);
@@ -147,7 +173,7 @@ namespace PKHeX.Core
                 MarkG6AOSlots(ref SlotsA);
                 MarkG6AOSlots(ref SlotsO);
 
-                Evolves6 = new EvolutionTree(Data.unpackMini(Properties.Resources.evos_ao, "ao"), GameVersion.ORAS, PersonalTable.AO, 721);
+                Evolves6 = new EvolutionTree(Data.unpackMini(Resources.evos_ao, "ao"), GameVersion.ORAS, PersonalTable.AO, MaxSpeciesID_6);
             }
             // Gen 7
             {
@@ -155,14 +181,14 @@ namespace PKHeX.Core
                 StaticMN = getStaticEncounters(GameVersion.MN);
                 var REG_SN = getEncounterTables(GameVersion.SN);
                 var REG_MN = getEncounterTables(GameVersion.MN);
-                var SOS_SN = getEncounterTables(Properties.Resources.encounter_sn_sos, "sm");
-                var SOS_MN = getEncounterTables(Properties.Resources.encounter_mn_sos, "sm");
+                var SOS_SN = getEncounterTables(Resources.encounter_sn_sos, "sm");
+                var SOS_MN = getEncounterTables(Resources.encounter_mn_sos, "sm");
                 MarkG7SMSlots(ref SOS_SN);
                 MarkG7SMSlots(ref SOS_MN);
                 SlotsSN = addExtraTableSlots(REG_SN, SOS_SN).Concat(Encounter_Pelago_SM).Concat(Encounter_Pelago_SN).ToArray();
                 SlotsMN = addExtraTableSlots(REG_MN, SOS_MN).Concat(Encounter_Pelago_SM).Concat(Encounter_Pelago_MN).ToArray();
 
-                Evolves7 = new EvolutionTree(Data.unpackMini(Properties.Resources.evos_sm, "sm"), GameVersion.SM, PersonalTable.SM, 802);
+                Evolves7 = new EvolutionTree(Data.unpackMini(Resources.evos_sm, "sm"), GameVersion.SM, PersonalTable.SM, MaxSpeciesID_7);
             }
         }
 
@@ -177,6 +203,9 @@ namespace PKHeX.Core
         internal static IEnumerable<int> getValidRelearn(PKM pkm, int skipOption)
         {
             List<int> r = new List<int> { 0 };
+            if (pkm.Format < 6)
+                return r;
+
             int species = getBaseSpecies(pkm, skipOption);
             r.AddRange(getLVLMoves(pkm, species, 1, pkm.AltForm));
 
@@ -232,7 +261,7 @@ namespace PKHeX.Core
                 case 6:
                     return LinkGifts6.FirstOrDefault(g => g.Species == pkm.Species && g.Level == pkm.Met_Level);
                 default:
-                    return LinkGifts7.FirstOrDefault(g => g.Species == pkm.Species && g.Level == pkm.Met_Level);
+                    return null;
             }
         }
         internal static EncounterSlot[] getValidWildEncounters(PKM pkm)
@@ -254,11 +283,14 @@ namespace PKHeX.Core
                     continue;
                 if (e.EggLocation != pkm.Egg_Location)
                     continue;
-                if (e.Location != 0 && e.Location != pkm.Met_Location)
-                    continue;
+                if (pkm.HasOriginalMetLocation)
+                {
+                    if (e.Location != 0 && e.Location != pkm.Met_Location)
+                        continue;
+                    if (e.Level != pkm.Met_Level)
+                        continue;
+                }
                 if (e.Gender != -1 && e.Gender != pkm.Gender)
-                    continue;
-                if (e.Level != pkm.Met_Level)
                     continue;
                 if (e.Form != pkm.AltForm && !FormChange.Contains(pkm.Species) && !e.SkipFormCheck)
                     continue;
@@ -288,11 +320,13 @@ namespace PKHeX.Core
             IEnumerable<DexLevel> p = getValidPreEvolutions(pkm);
 
             EncounterTrade[] table = null;
-            if (pkm.XY)
+            if (pkm.VC1)
+                table = TradeGift_RBY;
+            else if (pkm.XY)
                 table = TradeGift_XY;
-            if (pkm.AO)
+            else if (pkm.AO)
                 table = TradeGift_AO;
-            if (pkm.SM)
+            else if (pkm.SM)
                 table = TradeGift_SM;
 
             EncounterTrade z = table?.FirstOrDefault(f => p.Any(r => r.Species == f.Species));
@@ -310,7 +344,7 @@ namespace PKHeX.Core
                 return null;
             if (z.SID != pkm.SID)
                 return null;
-            if (z.Location != pkm.Met_Location)
+            if (pkm.HasOriginalMetLocation && z.Location != pkm.Met_Location)
                 return null;
             if (z.Level != pkm.Met_Level)
                 return null;
@@ -356,13 +390,16 @@ namespace PKHeX.Core
         {
             switch (pkm.Format)
             {
+                case 1:
+                    return Evolves1;
+
                 case 6:
                     return Evolves6;
                 case 7:
                     return Evolves7;
 
                 default:
-                    return Evolves6;
+                    return Evolves7;
             }
         }
 
@@ -391,12 +428,11 @@ namespace PKHeX.Core
 
         internal static int getMaxSpeciesOrigin(PKM pkm)
         {
-            if (pkm.Format == 1 || pkm.VC1) //Gen1 VC could not trade with gen 2 yet
+            if (pkm.Format == 1 || pkm.VC1) // Gen1 VC could not trade with gen 2 yet
                 return getMaxSpeciesOrigin(1);
-            else if (pkm.Format == 2 || pkm.VC2)
+            if (pkm.Format == 2 || pkm.VC2)
                 return getMaxSpeciesOrigin(2);
-            else
-                return getMaxSpeciesOrigin(pkm.GenNumber);
+            return getMaxSpeciesOrigin(pkm.GenNumber);
         }
 
         internal static IEnumerable<MysteryGift> getValidGifts(PKM pkm)
@@ -531,10 +567,23 @@ namespace PKHeX.Core
         {
             switch (pkm.GenNumber)
             {
+                case 1:
+                    return WildPokeBalls1;
+                case 2:
+                    return WildPokeBalls2;
+                case 3:
+                    return WildPokeBalls3;
+                case 4:
+                    return pkm.HGSS ? WildPokeBalls4_HGSS : WildPokeBalls4_DPPt;
+                case 5:
+                    return WildPokeBalls5;
+                case 6:
+                    return WildPokeballs6;
                 case 7:
                     return WildPokeballs7;
+
                 default:
-                    return WildPokeballs6;
+                    return null;
             }
         } 
 
@@ -615,6 +664,9 @@ namespace PKHeX.Core
         {
             switch (gen)
             {
+                case 1:
+                    return getCanBeCaptured(species, SlotsRBY, StaticRBY);
+
                 case 6:
                     switch (version)
                     {
@@ -735,7 +787,7 @@ namespace PKHeX.Core
             }
             if (t is int)
                 return "Unknown";
-            return t.GetType().Name;
+            return t?.GetType().Name ?? "Unknown";
         }
         private static IEnumerable<EncounterArea> getDexNavAreas(PKM pkm)
         {
@@ -752,6 +804,13 @@ namespace PKHeX.Core
         private static IEnumerable<int> getLVLMoves(PKM pkm, int species, int lvl, int formnum)
         {
             List<int> moves = new List<int>();
+            if (pkm.InhabitedGeneration(1))
+            {
+                moves.AddRange(((PersonalInfoG1)PersonalTable.RB[species]).Moves);
+                moves.AddRange(((PersonalInfoG1)PersonalTable.Y[species]).Moves);
+                moves.AddRange(LevelUpRB[species].getMoves(lvl));
+                moves.AddRange(LevelUpY[species].getMoves(lvl));
+            }
             if (pkm.InhabitedGeneration(6))
             {
                 int ind_XY = PersonalTable.XY.getFormeIndex(species, formnum);
@@ -768,49 +827,64 @@ namespace PKHeX.Core
         }
         private static IEnumerable<EncounterArea> getEncounterSlots(PKM pkm, int lvl = -1)
         {
-            switch (pkm.Version)
+            switch ((GameVersion)pkm.Version)
             {
-                case (int)GameVersion.X:
+                case GameVersion.RBY:
+                case GameVersion.RD: case GameVersion.BU:
+                case GameVersion.GN: case GameVersion.YW:
+                    return getSlots(pkm, SlotsRBY, lvl);
+
+                case GameVersion.X:
                     return getSlots(pkm, SlotsX, lvl);
-                case (int)GameVersion.Y:
+                case GameVersion.Y:
                     return getSlots(pkm, SlotsY, lvl);
-                case (int)GameVersion.AS:
+                case GameVersion.AS:
                     return getSlots(pkm, SlotsA, lvl);
-                case (int)GameVersion.OR:
+                case GameVersion.OR:
                     return getSlots(pkm, SlotsO, lvl);
-                case (int)GameVersion.SN:
+
+                case GameVersion.SN:
                     return getSlots(pkm, SlotsSN, lvl);
-                case (int)GameVersion.MN:
+                case GameVersion.MN:
                     return getSlots(pkm, SlotsMN, lvl);
                 default: return new List<EncounterArea>();
             }
         }
         private static IEnumerable<EncounterStatic> getStaticEncounters(PKM pkm, int lvl = -1)
         {
-            switch (pkm.Version)
+            switch ((GameVersion)pkm.Version)
             {
-                case (int)GameVersion.X:
+                case GameVersion.RBY:
+                case GameVersion.RD: case GameVersion.BU:
+                case GameVersion.GN: case GameVersion.YW:
+                    return getStatic(pkm, StaticRBY, lvl);
+
+                case GameVersion.X:
                     return getStatic(pkm, StaticX, lvl);
-                case (int)GameVersion.Y:
+                case GameVersion.Y:
                     return getStatic(pkm, StaticY, lvl);
-                case (int)GameVersion.AS:
+                case GameVersion.AS:
                     return getStatic(pkm, StaticA, lvl);
-                case (int)GameVersion.OR:
+                case GameVersion.OR:
                     return getStatic(pkm, StaticO, lvl);
-                case (int)GameVersion.SN:
+
+                case GameVersion.SN:
                     return getStatic(pkm, StaticSN, lvl);
-                case (int)GameVersion.MN:
+                case GameVersion.MN:
                     return getStatic(pkm, StaticMN, lvl);
+
                 default: return new List<EncounterStatic>();
             }
         }
         private static IEnumerable<EncounterArea> getEncounterAreas(PKM pkm)
         {
-            return getEncounterSlots(pkm).Where(l => l.Location == pkm.Met_Location);
+            var slots = getEncounterSlots(pkm);
+            bool noMet = !pkm.HasOriginalMetLocation;
+            return noMet ? slots : slots.Where(area => area.Location == pkm.Met_Location);
         }
         private static IEnumerable<EncounterSlot> getValidEncounterSlots(PKM pkm, EncounterArea loc, bool DexNav, bool ignoreLevel = false)
         {
-            const int fluteBoost = 4;
+            int fluteBoost = pkm.Format < 3 ? 0 : 4;
             const int dexnavBoost = 30;
 
             int df = DexNav ? fluteBoost : 0;
@@ -819,18 +893,31 @@ namespace PKHeX.Core
 
             // Get Valid levels
             IEnumerable<DexLevel> vs = getValidPreEvolutions(pkm);
+
             // Get slots where pokemon can exist
-            IEnumerable<EncounterSlot> slots = loc.Slots.Where(slot => vs.Any(evo => evo.Species == slot.Species && evo.Level >= slot.LevelMin - df) || ignoreLevel);
+            bool ignoreSlotLevel = ignoreLevel;
+            IEnumerable<EncounterSlot> slots = loc.Slots.Where(slot => vs.Any(evo => evo.Species == slot.Species && (ignoreSlotLevel || evo.Level >= slot.LevelMin - df)));
+
+            if (pkm.Format < 3 || pkm.VC)
+                return slots; // no met level or special encounter considerations
 
             // Filter for Met Level
             int lvl = pkm.Met_Level;
-            var encounterSlots = slots.Where(slot => slot.LevelMin - df <= lvl && lvl <= slot.LevelMax + (slot.AllowDexNav ? dn : df) || ignoreLevel).ToList();
+            int gen = pkm.GenNumber;
+            bool ignoreMetLevel = ignoreLevel || gen <= 4 && pkm.Format != gen;
+            var encounterSlots = slots.Where(slot => ignoreMetLevel || slot.LevelMin - df <= lvl && lvl <= slot.LevelMax + (slot.AllowDexNav ? dn : df)).ToList();
 
             // Pressure Slot
             EncounterSlot slotMax = encounterSlots.OrderByDescending(slot => slot.LevelMax).FirstOrDefault();
             if (slotMax != null)
                 slotMax = new EncounterSlot(slotMax) { Pressure = true, Form = pkm.AltForm };
 
+            if (gen < 4)
+            {
+                if (slotMax != null)
+                    slotdata.Add(slotMax);
+                return slotdata;
+            }
             if (!DexNav)
             {
                 // Filter for Form Specific
@@ -940,7 +1027,11 @@ namespace PKHeX.Core
         private static IEnumerable<int> getMoves(PKM pkm, int species, int lvl, int form, bool moveTutor, GameVersion Version, bool LVL, bool specialTutors, bool Machine, bool MoveReminder)
         {
             List<int> r = new List<int> { 0 };
-            for (int gen = pkm.GenNumber; gen <= pkm.Format; gen++)
+            int gen = pkm.GenNumber;
+            if (pkm.Format < 3)
+                gen = 1;
+
+            for (; gen <= pkm.Format; gen++)
                r.AddRange(getMoves(pkm, species, lvl, form, moveTutor, Version, LVL, specialTutors, Machine, gen, MoveReminder));
             return r.Distinct();
         }
@@ -951,6 +1042,24 @@ namespace PKHeX.Core
             var ver = Version;
             switch (Generation)
             {
+                case 1:
+                    {
+                        var pi_rb = (PersonalInfoG1)PersonalTable.RB[species];
+                        var pi_y = (PersonalInfoG1)PersonalTable.Y[species];
+                        if (LVL)
+                        {
+                            r.AddRange(pi_rb.Moves);
+                            r.AddRange(pi_y.Moves);
+                            r.AddRange(LevelUpRB[species].getMoves(lvl));
+                            r.AddRange(LevelUpY[species].getMoves(lvl));
+                        }
+                        if (Machine)
+                        {
+                            r.AddRange(TMHM_RBY.Where((t, m) => pi_rb.TMHM[m]));
+                            r.AddRange(TMHM_RBY.Where((t, m) => pi_y.TMHM[m]));
+                        }
+                        break;
+                    }
                 case 6:
                     switch (ver)
                     {
@@ -1026,6 +1135,9 @@ namespace PKHeX.Core
         {
             PersonalInfo info = pkm.PersonalInfo;
             List<int> moves = new List<int>();
+
+            if (pkm.Format < 3)
+                return moves;
 
             // Type Tutors -- Pledge moves and High BP moves switched places in G7+
             if (pkm.Format <= 6)
